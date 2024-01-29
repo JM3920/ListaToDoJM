@@ -1,14 +1,18 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, Button, ScrollView, StyleSheet, Modal } from "react-native";
+import { View, Text, TextInput, Button, ScrollView, StyleSheet, Modal,Alert } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
+import { getFirestore, addDoc, collection, updateDoc, doc, deleteDoc,Timestamp } from "firebase/firestore";
+import { v4 as uuidv4 } from 'uuid';
+
+
+
 import Task from "./Task";
 import EditModal from "./EditModal";
 
-//import appFirebase from "../database/firebase";
+import appFirebase from "../database/firebase";
 
-import { getFirestore, addDoc, collection} from "firebase/firestore";
 
-//const db = getFirestore(appFirebase);  
+const db = getFirestore(appFirebase);  
 
 export default function Tareas (props) {
   const [tasks, setTasks] = useState([]);
@@ -16,38 +20,51 @@ export default function Tareas (props) {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editTaskIndex, setEditTaskIndex] = useState(null);  
   
-  
   const addTask = async() => {
     if (task.trim() !== "") {
+      const tareaId = uuidv4(); 
       setTasks([...tasks, task]);
       setTask("");
-     
-      //const db = getFirestore(appFirebase);   
-    try {
-      await addDoc(collection(db, 'tareas'),{
-         ...state
-     })
-     Alert.alert('Alerta','Registro exitoso!');
-     //props.navigation.navigate('UsersList');
- }
- catch{
-     console.error(error);
- }
-
-  }};
-
-  const deleteTask = (index) => {
-    const newTasks = [...tasks];
-    newTasks.splice(index, 1);
-    setTasks(newTasks);
+      try {
+        await addDoc(collection(db, 'tareas'),{tareaId, task}); // Guarda la nueva tarea en la base de datos
+        Alert.alert('Alerta', 'Tarea agregada exitosamente!');
+      } catch (error) {
+        console.error(error);
+      }
+    }
   };
+  
 
-  const editTask = (index, newText) => {
+  const deleteTask = async (index, tareaId) => { 
+    try {
+      const newTasks = tasks.filter((_, i) => i !== index);
+      setTasks(newTasks);
+      
+      await deleteDoc(doc(db, "tareas", tareaId));
+      Alert.alert('Alerta', 'Tarea eliminada exitosamente!');
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
+  
+
+  const editTask = async (index, newText, tareaId) => {
     const newTasks = [...tasks];
     newTasks[index] = newText;
     setTasks(newTasks);
     setEditModalVisible(false);
-  };
+
+      try {
+        await updateDoc(doc(db, 'tareas',tareaId), {task:newText}); // Guarda la nueva tarea en la base de datos
+        Alert.alert('Alerta', 'Tarea agregada exitosamente!');
+      } catch (error) {
+        console.error(error);
+      }
+
+    
+  }  
+      
 
   return (
     <View style={styles.container}>
@@ -133,4 +150,52 @@ const styles = StyleSheet.create({
   },
 });
 
-//export default App;
+
+/*
+
+  const addTask = async() => {
+    if (task.trim() !== "") {
+      
+    try {
+    const addTaskRef = await addDoc(collection(db, 'tareas'),{
+        text: task,
+        completed: false,
+        date: selectDate.toISOString(),
+        manualDate: manualDate ? new Date(manualDate).toISOString():null,
+    });
+    setTasks([...tasks, 
+    {
+        id: newTaskRef,id,
+        text: task,
+        completed: false,
+        date: selectDate.toISOString(),
+        manualDate: manualDate ? new Date(manualDate).toISOString():null,
+    }
+    ]);
+    setTask("");
+
+ }
+ catch(error){
+     console.error("Error al agregar tarea", error);
+ }
+
+  }else{
+    Alert.alert('Warning', 'Task cannont be empty')
+  }
+};
+
+
+  const deleteTask = (index) => {
+    const newTasks = [...tasks];
+    newTasks.splice(index, 1);
+    setTasks(newTasks);
+  };
+
+  const editTask = async (index, newText) => {
+    const newTasks = [...tasks];
+    newTasks[index] = newText;
+    setTasks(newTasks);
+    setEditModalVisible(false);
+  
+    
+  };*/
